@@ -1,0 +1,149 @@
+version: '3.8'
+
+services:
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+      - DATABASE_URL=postgresql://edinet_user:edinet_pass@postgres:5432/edinet_analysis
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-jwt-secret-here
+      - DATA_INGESTION_URL=http://data-ingestion:3001
+      - ANALYSIS_SERVICE_URL=http://analysis-service:3002
+      - REPORT_GENERATOR_URL=http://report-generator:3003
+      - AUTH_SERVICE_URL=http://auth-service:3004
+    volumes:
+      - ./api-gateway:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+
+  # Data Ingestion Service
+  data-ingestion:
+    build:
+      context: ./services/data-ingestion
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DATABASE_URL=postgresql://edinet_user:edinet_pass@postgres:5432/edinet_analysis
+      - REDIS_URL=redis://redis:6379
+      - EDINET_API_KEY=${EDINET_API_KEY}
+    volumes:
+      - ./services/data-ingestion:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+
+  # Analysis Service
+  analysis-service:
+    build:
+      context: ./services/analysis-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - DATABASE_URL=postgresql://edinet_user:edinet_pass@postgres:5432/edinet_analysis
+      - REDIS_URL=redis://redis:6379
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+    volumes:
+      - ./services/analysis-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+
+  # Report Generator Service
+  report-generator:
+    build:
+      context: ./services/report-generator
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - DATABASE_URL=postgresql://edinet_user:edinet_pass@postgres:5432/edinet_analysis
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./services/report-generator:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - DATABASE_URL=postgresql://edinet_user:edinet_pass@postgres:5432/edinet_analysis
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-jwt-secret-here
+      - JWT_EXPIRES_IN=7d
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=edinet_user
+      - POSTGRES_PASSWORD=edinet_pass
+      - POSTGRES_DB=edinet_analysis
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # pgAdmin (for development)
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  redis_data:

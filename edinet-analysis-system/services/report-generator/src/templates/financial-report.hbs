@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{company.name}} - 財務分析レポート</title>
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        
+        .header {
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .company-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        
+        .chart-container {
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .chart-container img {
+            max-width: 100%;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .section {
+            margin: 40px 0;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        
+        @media print {
+            body {
+                max-width: 100%;
+            }
+            .metric-card {
+                break-inside: avoid;
+            }
+            .chart-container {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>財務分析レポート</h1>
+        <div class="company-info">
+            <h2>{{company.name}} ({{company.securitiesCode}})</h2>
+            <p>対象期間: {{period.fiscalYear}}年度 {{period.fiscalPeriod}}</p>
+            <p>作成日: {{formatDate ../createdAt}}</p>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>主要財務指標</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">売上高</div>
+                <div class="metric-value">{{formatNumber financialStatements.net_sales}}</div>
+                <div class="metric-label">百万円</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">営業利益</div>
+                <div class="metric-value">{{formatNumber financialStatements.operating_income}}</div>
+                <div class="metric-label">百万円</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">純利益</div>
+                <div class="metric-value">{{formatNumber financialStatements.net_income}}</div>
+                <div class="metric-label">百万円</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">総資産</div>
+                <div class="metric-value">{{formatNumber financialStatements.total_assets}}</div>
+                <div class="metric-label">百万円</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>収益性分析</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">ROE (自己資本利益率)</div>
+                <div class="metric-value">{{formatPercent metrics.roe}}</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">ROA (総資産利益率)</div>
+                <div class="metric-value">{{formatPercent metrics.roa}}</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">営業利益率</div>
+                <div class="metric-value">{{formatPercent metrics.operatingMargin}}</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">純利益率</div>
+                <div class="metric-value">{{formatPercent metrics.netProfitMargin}}</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h3>収益性指標</h3>
+            <img src="data:image/png;base64,{{charts.profitability}}" alt="収益性指標チャート">
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>売上高推移</h2>
+        <div class="chart-container">
+            <img src="data:image/png;base64,{{charts.revenueTrend}}" alt="売上高推移チャート">
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>財務構造</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">自己資本比率</div>
+                <div class="metric-value">{{formatPercent metrics.equityRatio}}</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">負債資本倍率</div>
+                <div class="metric-value">{{metrics.debtToEquity}}</div>
+                <div class="metric-label">倍</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">総資産回転率</div>
+                <div class="metric-value">{{metrics.assetTurnover}}</div>
+                <div class="metric-label">回</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h3>貸借対照表構成</h3>
+            <img src="data:image/png;base64,{{charts.balanceSheet}}" alt="貸借対照表構成チャート">
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>成長性分析</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>指標</th>
+                    <th>成長率</th>
+                    <th>評価</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>売上高成長率</td>
+                    <td>{{formatPercent metrics.salesGrowth}}</td>
+                    <td>{{#if (gt metrics.salesGrowth 10)}}<span class="highlight">高成長</span>{{else}}安定成長{{/if}}</td>
+                </tr>
+                <tr>
+                    <td>純利益成長率</td>
+                    <td>{{formatPercent metrics.netIncomeGrowth}}</td>
+                    <td>{{#if (gt metrics.netIncomeGrowth 15)}}<span class="highlight">高成長</span>{{else}}安定成長{{/if}}</td>
+                </tr>
+                <tr>
+                    <td>総資産成長率</td>
+                    <td>{{formatPercent metrics.assetGrowth}}</td>
+                    <td>{{#if (gt metrics.assetGrowth 10)}}<span class="highlight">拡大傾向</span>{{else}}安定推移{{/if}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h2>同業他社比較</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>企業名</th>
+                    <th>証券コード</th>
+                    <th>ROE (%)</th>
+                    <th>ROA (%)</th>
+                    <th>営業利益率 (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each analysis.comparisons}}
+                <tr>
+                    <td>{{company_name}}</td>
+                    <td>{{securities_code}}</td>
+                    <td>{{formatPercent metrics.roe}}</td>
+                    <td>{{formatPercent metrics.roa}}</td>
+                    <td>{{formatPercent metrics.operatingMargin}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="footer">
+        <p>このレポートはEDINET分析システムにより自動生成されました。</p>
+        <p>投資判断の参考情報としてご利用ください。</p>
+    </div>
+</body>
+</html>
