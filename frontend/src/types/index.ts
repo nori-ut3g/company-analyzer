@@ -41,8 +41,11 @@ export interface Company {
   establishedDate?: string
   capitalStock?: number
   employeeCount?: number
-  createdAt: string
-  updatedAt: string
+  edinetCode?: string
+  latestFiscalYear?: number
+  financialRecordsCount?: number
+  createdAt?: string
+  updatedAt?: string
 }
 
 // Financial Statement Types

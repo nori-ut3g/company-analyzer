@@ -74,32 +74,37 @@ router.get('/:companyId', async (req: AuthenticatedRequest, res: Response, next:
   try {
     const { companyId } = req.params;
 
-    const query = `
-      SELECT 
-        company_id,
-        edinet_code,
-        company_name,
-        company_name_en,
-        industry_code,
-        industry_name,
-        listing_market,
-        fiscal_year_end,
-        established_date,
-        capital_stock,
-        employee_count,
-        created_at,
-        updated_at
-      FROM edinet.companies 
-      WHERE company_id = $1 AND is_active = true
-    `;
+    // Get all companies and find the one with matching ID
+    const response = await axios.get('http://edinet-data-ingestion:3005/api/ingestion/companies', {
+      params: {
+        limit: 10000 // Get all companies
+      }
+    });
 
-    const result = await pool.query(query, [companyId]);
+    const companies = response.data.data.companies;
+    const company = companies.find((c: any) => c.id === parseInt(companyId));
 
-    if (result.rows.length === 0) {
+    if (!company) {
       throw new ApiError(404, 'Company not found');
     }
 
-    res.json(result.rows[0]);
+    // Transform to match expected format
+    res.json({
+      company_id: company.id,
+      edinet_code: company.edinet_code,
+      company_name: company.company_name,
+      company_name_en: company.company_name_en || company.company_name,
+      securities_code: company.securities_code,
+      industry_code: company.industry,
+      industry_name: company.industry,
+      listing_market: company.listing_market,
+      fiscal_year_end: company.fiscal_year_end,
+      established_date: company.established_date,
+      capital_stock: company.capital_stock,
+      employee_count: company.employee_count,
+      created_at: company.created_at,
+      updated_at: company.updated_at
+    });
   } catch (error) {
     next(error);
   }
@@ -162,6 +167,51 @@ router.get('/:companyId/financials', async (req: AuthenticatedRequest, res: Resp
       company_id: companyId,
       financial_statements: result.rows
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get company financial data (alias for frontend compatibility)
+router.get('/:companyId/financial-data', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { companyId } = req.params;
+    
+    // For now, return mock data until we have actual financial data
+    const mockFinancialData = [
+      {
+        id: 1,
+        company_id: parseInt(companyId),
+        fiscal_year: 2023,
+        fiscal_period: 'FY',
+        report_type: 'Annual Report',
+        net_sales: 31000000000,
+        operating_income: 2800000000,
+        ordinary_income: 2900000000,
+        net_income: 2400000000,
+        total_assets: 50000000000,
+        net_assets: 28000000000,
+        equity_capital: 6350000000,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 2,
+        company_id: parseInt(companyId),
+        fiscal_year: 2022,
+        fiscal_period: 'FY',
+        report_type: 'Annual Report',
+        net_sales: 29500000000,
+        operating_income: 2500000000,
+        ordinary_income: 2600000000,
+        net_income: 2100000000,
+        total_assets: 47000000000,
+        net_assets: 26000000000,
+        equity_capital: 6350000000,
+        created_at: new Date().toISOString()
+      }
+    ];
+    
+    res.json(mockFinancialData);
   } catch (error) {
     next(error);
   }

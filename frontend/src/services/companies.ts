@@ -47,7 +47,7 @@ export const companiesService = {
         total: number,
         totalPages: number
       }
-    }>('/companies', params)
+    }>('/api/companies', params)
     
     // Transform the data to match Company interface
     const transformedCompanies: Company[] = response.companies.map((company: any) => ({
@@ -75,11 +75,8 @@ export const companiesService = {
       return company
     }
     // Use API gateway to get company details
-    const response = await api.get<{
-      companies: any[]
-    }>(`/companies?page=1&limit=1&search=${companyId}`)
+    const company = await api.get<any>(`/api/companies/${companyId}`)
     
-    const company = response.companies.find((c: any) => c.company_id === companyId)
     if (!company) throw new Error('Company not found')
     
     return {

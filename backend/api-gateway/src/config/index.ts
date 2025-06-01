@@ -23,7 +23,7 @@ export const config = {
   },
   
   // CORS
-  allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+  allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
   
   // Microservices
   services: {

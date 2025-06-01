@@ -16,11 +16,36 @@ import reportsRoutes from './routes/reports';
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
-app.use(cors({
-  origin: config.allowedOrigins,
-  credentials: true
+// CORS configuration - must be before other middleware
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Log the origin for debugging
+    console.log('CORS request from origin:', origin || 'no origin (same-origin or non-browser)');
+    // Allow all origins
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
+  maxAge: 86400, // 24 hours
+  optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
+
+// Add a middleware to log all requests and their headers
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin || 'none'}`);
+  next();
+});
+
+// Security middleware - disable conflicting headers
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: false,
+  crossOriginOpenerPolicy: false,
+  crossOriginEmbedderPolicy: false
 }));
 
 // Rate limiting
@@ -71,12 +96,20 @@ app.use('/companies', companiesRoutes);
 app.use('/analysis', analysisRoutes);
 app.use('/reports', reportsRoutes);
 
-// Proxy to microservices
+// Proxy to microservices with CORS headers preservation
 const createServiceProxy = (target: string, pathRewrite?: Record<string, string>) => 
   createProxyMiddleware({
     target,
     changeOrigin: true,
     pathRewrite,
+    onProxyRes: (proxyRes, req, res) => {
+      // Ensure CORS headers are preserved on proxy responses
+      const origin = req.headers.origin;
+      if (origin) {
+        proxyRes.headers['access-control-allow-origin'] = origin;
+        proxyRes.headers['access-control-allow-credentials'] = 'true';
+      }
+    },
     onError: (err, req, res) => {
       console.error(`Proxy error for ${req.url}:`, err.message);
       if (!res.headersSent) {
@@ -103,4 +136,5 @@ const PORT = config.port;
 app.listen(PORT, () => {
   console.log(`API Gateway running on port ${PORT}`);
   console.log(`Environment: ${config.env}`);
+  console.log('CORS enabled for all origins with credentials');
 });
